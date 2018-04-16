@@ -80,6 +80,7 @@ public long enqueue(Request request) {
     }
 ```
 **DownloadJobService.java**
+
 下载任务通过`DownloadJobService`进行调度，`onStartJob()`中开始下载:
 ``` java
     public boolean onStartJob(JobParameters params) {
@@ -97,6 +98,7 @@ public long enqueue(Request request) {
     }
 ```
 **DownloadThread.java**
+
 `DownloadThread`的`run()`方法中。核心下载方法为`executeDonwload()`：
 ``` java
     private void executeDownload() throws StopRequestException {
@@ -154,6 +156,7 @@ public long enqueue(Request request) {
 
 以上代码分为几部分进行分析。
 **重定向**：
+
 > 理想情况下，一项资源只有一个访问位置，也就是只有一个 URL 。但是由于种种原因，需要为资源设定不同的名称（即不同的域名，例如带有和不带有www 前缀的URL，以及简短易记的 URL 等）。在这种情况下，实用的方法是将其重定向到那个实际的（标准的）URL，而不是复制资源。
 > 
 > HTTP 版本站点的请求会被重定向至采用了 HTTPS 协议的版本。
@@ -168,6 +171,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 首先需要传输用户 `UID`。用户 `UID` 强制使用明码传输，因此不能使用 `HTTPS` 协议传输。因为 `HTTP` 重定向过程中可能会切换到 `HTTPS` 协议。
 
 **`HTTP` 请求头：**
+
 ``` java
     private void addRequestHeaders(HttpURLConnection conn, boolean resuming) {
         //...
@@ -186,12 +190,14 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 可以通过从数据库查询相应下载任务已写入文件字节数，若不为`0`则表示需要继续下载。
 
 **请求头中相关字段介绍：**
+
 -  `Accept-Encoding`: 客户端能够理解的内容编码方式。`identity`表示不使用任何压缩算法进行编码。    
 -  `Connection`: 决定当前的事务完成后，是否会关闭网络连接。`close`表示任务完成后关闭连接。    
 -  `If-Match`：`HTTP`缓存相关字段，表示一个条件请求。在请求方法为 `GET` 和 `HEAD` 的情况下，服务器仅在请求的资源满足此首部列出的 `ETag` 之一时才会返回资源。`value`为`ETag`值。    
 -  `Range`: 告知服务器请求返回文件的哪一部分。`value`为请求文件比特数的范围。
 
 **`HTTP` 响应：**
+
 ``` java
     switch (responseCode) {
                     case HTTP_OK:
