@@ -311,7 +311,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 ##### 以上就是任务下载的基本流程。简单总结一下：
 
-![Alt text](./1523609679763.png)
+![Alt text](./img/9b492b3c-72bd-4bdc-b435-7e7d49e04130.png)
 
 整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过操作数据库，最后通过`DownloadService`中的线程调度完成工作。整体上都是由`DownloadProvider`进行过渡调用。而数据库与`Service`都通过`DownloadProvider`进行隔离。
 
