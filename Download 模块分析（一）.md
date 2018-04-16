@@ -23,6 +23,7 @@ Uri uri = Uri.parse("your own uri");
 
 ##### 流程分析
 **DownloadManager.java**
+
 `DownloadManager.enqueue()`：
 ``` java
 public long enqueue(Request request) {
@@ -52,9 +53,10 @@ public long enqueue(Request request) {
 此处过滤了`insert()`中大部分操作下载数据库字段的不相关代码。之前的版本中，`DownloadProvider`通过`context.startService()`启动`DownloadService`。在 Android N 版本之后，`DownloadProvider`引入了`JobScheduler`进行异步下载任务的处理。而且`JobScheduler`可以在设备达到某些条件（如连接充电器、在WiFi环境下等）才执行任务，可以节省用户设备的资源。
 
 **Helpers.java**
-`Helpers`类是控制异步任务下载的一个工具类，查看`Helpers.scheduleJob()`:
 
-    public static void scheduleJob(Context context, long downloadId) {
+`Helpers`类是控制异步任务下载的一个工具类，查看`Helpers.scheduleJob()`:
+``` java
+    public static void scheduleJob(Context context, long downloadId) {
         final boolean scheduled = scheduleJob(context,
                 DownloadInfo.queryDownloadInfo(context, downloadId));
         if (!scheduled) {
@@ -63,10 +65,11 @@ public long enqueue(Request request) {
             getDownloadNotifier(context).update();
         }
     }
+```
 其中`Helpers.scheduleJob()`方法中使用`rowId`将那条下载信息查询出来，然后调用绑定的`DownloadJobService`进行下载任务。如果线程调度失败，会返回`false`。`getDownloadNotifier(context).update()`和更改通知栏 UI 相关，不进行详述。
 
 `scheduleJob()`中设置了`JobScheduler`的相关属性：
-
+``` java
     public static boolean scheduleJob(Context context, DownloadInfo info) {
         //...
         final JobInfo.Builder builder = new JobInfo.Builder(jobId,
@@ -75,10 +78,10 @@ public long enqueue(Request request) {
         scheduler.scheduleAsPackage(builder.build(), packageName, UserHandle.myUserId(), TAG);
         return true;
     }
-
+```
 **DownloadJobService.java**
 下载任务通过`DownloadJobService`进行调度，`onStartJob()`中开始下载:
-
+``` java
     public boolean onStartJob(JobParameters params) {
         final int id = params.getJobId();
         // Spin up thread to handle this download
@@ -92,7 +95,7 @@ public long enqueue(Request request) {
         thread.start();
         return true;
     }
-
+```
 **DownloadThread.java**
 `DownloadThread`的`run()`方法中。核心下载方法为`executeDonwload()`：
 ``` java
@@ -147,7 +150,6 @@ public long enqueue(Request request) {
         }
         throw new StopRequestException(STATUS_TOO_MANY_REDIRECTS, "Too many redirects");
     }
-
 ```
 
 以上代码分为几部分进行分析。
@@ -155,7 +157,7 @@ public long enqueue(Request request) {
 > 理想情况下，一项资源只有一个访问位置，也就是只有一个 URL 。但是由于种种原因，需要为资源设定不同的名称（即不同的域名，例如带有和不带有www 前缀的URL，以及简短易记的 URL 等）。在这种情况下，实用的方法是将其重定向到那个实际的（标准的）URL，而不是复制资源。
 > 
 > HTTP 版本站点的请求会被重定向至采用了 HTTPS 协议的版本。
-```
+``` java
 if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))) {
                 throw new StopRequestException(STATUS_BAD_REQUEST,
                         "Cleartext traffic not permitted for UID " + mInfo.mUid + ": "
@@ -166,7 +168,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 首先需要传输用户 `UID`。用户 `UID` 强制使用明码传输，因此不能使用 `HTTPS` 协议传输。因为 `HTTP` 重定向过程中可能会切换到 `HTTPS` 协议。
 
 **`HTTP` 请求头：**
-
+``` java
     private void addRequestHeaders(HttpURLConnection conn, boolean resuming) {
         //...
         conn.setRequestProperty("Accept-Encoding", "identity");
@@ -179,6 +181,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
             conn.addRequestProperty("Range", "bytes=" + mInfoDelta.mCurrentBytes + "-");
         }
     }
+ ```
 `addRequestHeaders()`方法中的第二个参数`resuming`表示当前下载任务是否需要继续下载，即当前任务处于暂停状态。
 可以通过从数据库查询相应下载任务已写入文件字节数，若不为`0`则表示需要继续下载。
 
@@ -189,7 +192,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 -  `Range`: 告知服务器请求返回文件的哪一部分。`value`为请求文件比特数的范围。
 
 **`HTTP` 响应：**
-
+``` java
     switch (responseCode) {
                     case HTTP_OK:
                         if (resuming) {
@@ -219,6 +222,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
                         continue;
                     //...
                 }
+```
 **下载任务相关 `HTTP` [状态码](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Redirections)：**
 - `HTTP_OK`: 200。表示请求成功
 - `HTTP_PARTIAL`: 206。成功状态响应代码表示请求已成功，并且主体包含所请求的数据区间，该数据区间是在请求的 `Range` 首部指定的。
@@ -230,7 +234,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 重定向相关状态码处理方式一致。
 
 1. 首先看请求成功的流程：
-
+``` java
     private void parseOkHeaders(HttpURLConnection conn) throws StopRequestException {
         if (mInfoDelta.mFileName == null) {
             // ...
@@ -244,11 +248,11 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
         //...
         mInfoDelta.writeToDatabaseOrThrow();
     }
-
+```
 首先来看请求成功的情况。`parseOkHeaders()`解析响应头中的不同字段，并且存到内部类`DownloadInfoDelta`当中。`Helps.generateSaveFile()`生成下载相关文件。`writeToDatabaseOrThrow()`则通过`DownloadProvider.update()`将任务下载到数据库当中。
 
 查看`transferData()`代码：
-
+``` java
     private void transferData(HttpURLConnection conn) throws StopRequestException {
         //...
         try {
@@ -272,12 +276,12 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
         }
         //...
     }
-
+```
 >[DRM](https://developer.android.google.cn/reference/android/drm/package-summary.html)，英文全称为`Digital Rights Management`，译为数字版权管理。它是目前业界使用非常广泛的一种数字内容版权保护技术。`DRM`框架提供一套机制对用户使用手机上的媒体内容（如`ringtone`, `mp3`等）进行限制，如限制拷贝给第三方，限制使用次数或时限等，从而保护内容提供商的权利。
 
 - `DrmManagerClient`是`Android`中`DRM`框架的核心接口类。如果下载文件为版权保护文件，则通过文件描述符、`mimeType`等变量创建`DrmOutPutStream`，反之创建`ParcelFileDescriptor`中相应流对象（`ParcelFileDescriptor`是可以用于进程间`Binder`通信的`FileDescriptor`）
 - `Os.sleek(FileDescriptor, long offset, int whence)`通过文件描述符从当前偏移量设置`mInfoDelta.mCurrentBytes`中，即支持从文件中间某个字节开始读写。
-
+``` java
 `transferData()`中核心方法为`transferData(InputStream, OutputStream, FileDescriptor)`，代码如下:
 
     private void transferData(InputStream in, OutputStream out, FileDescriptor outFd)
@@ -299,6 +303,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
         }
         //...
     }
+```
 接下来的逻辑就是通过普通`I/O`流进行文件读写了。读写完固定字节数后通过`updateProgress()`更新下载进度。
 
 2. 请求部分数据区间，也就是暂停后继续下载。逻辑与请求所有数据基本一致，不再详述。
