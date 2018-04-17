@@ -1,7 +1,4 @@
-## Download 模块分析(一)
-
-----------
-
+# Download 模块分析(一)
 
 > 本文分析 DownloadManager 下载文件的流程。
 
