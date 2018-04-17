@@ -8,7 +8,7 @@
 
 ### DownloadManager 下载流程
 
-##### 基本用法
+#### 基本用法
 
 ``` java
 Uri uri = Uri.parse("your own uri");
@@ -21,7 +21,7 @@ Uri uri = Uri.parse("your own uri");
 ```
 调用`enqueue`方法之后，只要数据连接可用并且 `DownloadManager` 可用，下载就会自动开始。
 
-##### 流程分析
+#### 流程分析
 
 **DownloadManager.java**
 
@@ -317,12 +317,15 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 2. 请求部分数据区间，也就是暂停后继续下载。逻辑与请求所有数据基本一致，不再详述。
 3.  `URL` 重定向。如果 `URL`永久重定向，则将重定向后的`URL`写入到下载数据库当中；如果是临时重定向，则继续执行循环执行请求，直到达到重定向最大限定次数。
 
-##### 以上就是任务下载的基本流程。简单总结一下：
+#### 以上就是任务下载的基本流程。简单总结一下：
 
 ![Alt text](./img/9b492b3c-72bd-4bdc-b435-7e7d49e04130.png)
 
 整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进行隔离。
 
+Note:
+- `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
+- `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关继续下载接口，需要开发者自行实现。
 
 ----------
 参考资料：
