@@ -323,9 +323,13 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进行隔离。
 
-Note:
-- `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
-- `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关继续下载接口，需要开发者自行实现。
+
+
+
+
+###### Note:
+###### - `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
+###### - `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关继续下载接口，需要开发者自行实现。
 
 ----------
 参考资料：
