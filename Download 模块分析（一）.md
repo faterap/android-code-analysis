@@ -1,16 +1,13 @@
 # Download 模块分析(一)
 
-> 本文分析 DownloadManager 下载文件的流程。
+> 本文分析 DownloadManager 下载文件的流程。    
 
-
-首先了解一下`Download`模块相关的类:
+首先了解一下`Download`模块相关的类：
 - `DownloadProvider` --  数据库操作的封装，继承自`ContentProvider`
 - `DownloadManager` -- 大部分逻辑是进一步封装数据操作，供外部调用
 - `DownloadJobService` -- 封装文件`download`，`delete`等操作，并且操纵下载的`notification`。继承自`Service`
 - DownloadNotifier -- 状态栏`Notification`逻辑
-- DownloadReceiver -- 配合`DownloadNotifier`进行文件的操作及其`Notification`
-
-
+- DownloadReceiver -- 配合`DownloadNotifier`进行文件的操作及其`Notification`    
 
 ### DownloadManager 下载流程
 
@@ -329,11 +326,8 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 ![Alt text](./img/9b492b3c-72bd-4bdc-b435-7e7d49e04130.png)
 
-整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进行隔离。
-
-
-
-
+整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进
+行隔离。    
 
 **Note**:
 - `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
