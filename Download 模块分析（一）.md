@@ -1,13 +1,13 @@
 # Download 模块分析(一)
 
-> 本文分析 DownloadManager 下载文件的流程。    
+> 本文分析 DownloadManager 下载文件的流程。&nbsp;&nbsp;
 
 首先了解一下`Download`模块相关的类：
 - `DownloadProvider` --  数据库操作的封装，继承自`ContentProvider`
 - `DownloadManager` -- 大部分逻辑是进一步封装数据操作，供外部调用
 - `DownloadJobService` -- 封装文件`download`，`delete`等操作，并且操纵下载的`notification`。继承自`Service`
-- DownloadNotifier -- 状态栏`Notification`逻辑
-- DownloadReceiver -- 配合`DownloadNotifier`进行文件的操作及其`Notification`    
+- `DownloadNotifier` -- 状态栏`Notification`逻辑
+- `DownloadReceiver` -- 配合`DownloadNotifier`进行文件的操作及其`Notification`&nbsp;&nbsp;
 
 ### DownloadManager 下载流程
 
