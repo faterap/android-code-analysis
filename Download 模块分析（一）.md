@@ -22,6 +22,7 @@ Uri uri = Uri.parse("your own uri");
 调用`enqueue`方法之后，只要数据连接可用并且 `DownloadManager` 可用，下载就会自动开始。
 
 ##### 流程分析
+
 **DownloadManager.java**
 
 `DownloadManager.enqueue()`：
@@ -155,6 +156,7 @@ public long enqueue(Request request) {
 ```
 
 以上代码分为几部分进行分析。
+
 **重定向**：
 
 > 理想情况下，一项资源只有一个访问位置，也就是只有一个 URL 。但是由于种种原因，需要为资源设定不同的名称（即不同的域名，例如带有和不带有www 前缀的URL，以及简短易记的 URL 等）。在这种情况下，实用的方法是将其重定向到那个实际的（标准的）URL，而不是复制资源。
