@@ -281,6 +281,8 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
         //...
     }
 ```
+
+这里的流对象都通过`DRM`框架进行创建，概念如下：  
 >[DRM](https://developer.android.google.cn/reference/android/drm/package-summary.html)，英文全称为`Digital Rights Management`，译为数字版权管理。它是目前业界使用非常广泛的一种数字内容版权保护技术。`DRM`框架提供一套机制对用户使用手机上的媒体内容（如`ringtone`, `mp3`等）进行限制，如限制拷贝给第三方，限制使用次数或时限等，从而保护内容提供商的权利。
 
 - `DrmManagerClient`是`Android`中`DRM`框架的核心接口类。如果下载文件为版权保护文件，则通过文件描述符、`mimeType`等变量创建`DrmOutPutStream`，反之创建`ParcelFileDescriptor`中相应流对象（`ParcelFileDescriptor`是可以用于进程间`Binder`通信的`FileDescriptor`）
