@@ -319,7 +319,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 ![Alt text](./img/9b492b3c-72bd-4bdc-b435-7e7d49e04130.png)
 
-整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过操作数据库，最后通过`DownloadService`中的线程调度完成工作。整体上都是由`DownloadProvider`进行过渡调用。而数据库与`Service`都通过`DownloadProvider`进行隔离。
+整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进行隔离。
 
 
 ----------
