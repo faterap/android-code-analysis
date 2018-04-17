@@ -327,9 +327,9 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 
 
-###### Note:
-###### - `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
-###### - `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关继续下载接口，需要开发者自行实现。
+##### Note:
+##### - `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
+##### - `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关继续下载接口，需要开发者自行实现。
 
 ----------
 参考资料：
