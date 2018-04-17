@@ -336,5 +336,5 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 ----------
 参考资料：
 
-> https://www.jianshu.com/p/c9dc04af2f54
+> https://www.jianshu.com/p/c9dc04af2f54  
 > https://blog.csdn.net/chaoy1116/article/details/22384841
