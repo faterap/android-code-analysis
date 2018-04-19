@@ -9,9 +9,7 @@
 - `DownloadNotifier` -- 状态栏`Notification`逻辑
 - `DownloadReceiver` -- 配合`DownloadNotifier`进行文件的操作及其`Notification`。
 
-### DownloadManager 下载流程
-
-#### 基本用法
+### 开始下载
 
 ``` java
 Uri uri = Uri.parse("your own uri");
@@ -330,6 +328,77 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 2. 返回`206`，则请求目标下载文件的部分数据。流程与请求所有数据大致相同，不再进行站看。
 3.  返回`307`等重定向相关状态码：如果 `URL`永久重定向，则将重定向后的`URL`写入到下载数据库当中；如果是临时重定向，则继续执行循环执行请求，直到达到重定向最大限定次数。
+
+## 取消下载
+
+取消下载通过`DownloadManager.remove(long id)`实现。如果下载任务正在进行，该任务会被中断；如果任务已经完成（包括下载成功或失败），取消后文件将被删除。
+
+``` java
+public int remove(long... ids) {
+        return markRowDeleted(ids);
+    }
+```
+
+继续往下看`markRowDeleted(ids)`:
+
+```java
+public int markRowDeleted(long... ids) {
+        if (ids == null || ids.length == 0) {
+            // called with nothing to remove!
+            throw new IllegalArgumentException("input param 'ids' can't be null");
+        }
+        return mResolver.delete(mBaseUri, getWhereClauseForIds(ids), getWhereArgsForIds(ids));
+    }
+```
+
+查看`DownloadProvider.delete(...)`方法：
+
+``` java
+    public int delete(final Uri uri, final String where, final String[] whereArgs) {
+        //...
+        switch (match) {
+            case MY_DOWNLOADS:
+            case MY_DOWNLOADS_ID:
+            case ALL_DOWNLOADS:
+            case ALL_DOWNLOADS_ID:
+            ///...
+                try (Cursor cursor = db.query(DB_TABLE, null, selection.getSelection(),
+                        selection.getParameters(), null, null, null)) {
+
+                    while (cursor.moveToNext()) {
+                      //...
+                        // 取消当前任务
+                        scheduler.cancel((int) info.mId);
+
+                        if (!TextUtils.isEmpty(path)) {
+                          //...
+                          // 删除已下载文件
+                            file.delete();
+                        }
+
+                        if ((!TextUtils.isEmpty(path) && new File(path).exists())
+                            || toDeleteFromMediaDB) {
+                                //...
+                                  // 删除 MediaProvider 记录
+                                    int count_media = getContext().getContentResolver().delete(
+                                            Uri.parse(mediaUri), null, null);
+                                  // ...
+                        }
+                        //...
+                    }
+                }
+                //...
+                // 删除 DownloadProvider 记录
+                count = db.delete(DB_TABLE, selection.getSelection(), selection.getParameters());
+                break;
+                //...
+        }
+        //...
+        return count;
+    }
+```
+
+`DownloadProvider`中有一个字段`mediaprovider_uri`，`value`指的是该记录在`MediaProvider`中`uri`所对应的值。因此`DownloadProvider`中记录发生改变时，`MediaProvider`记录要同步改变。
 
 #### 以上就是任务下载的基本流程。简单总结一下：
 
