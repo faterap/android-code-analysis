@@ -105,7 +105,55 @@ public long enqueue(Request request) {
 
 **DownloadThread.java**
 
-`DownloadThread`的`run()`方法中。核心下载方法为`executeDonwload()`：
+我们主要关注`run()`方法：
+
+``` java
+@Override
+    public void run() {
+      //...
+        try {
+          // 开始下载
+            executeDownload();
+            //...
+        } catch (StopRequestException e) {
+          //...
+          // Some errors should be retryable, unless we fail too many times.
+            if (isStatusRetryable(mInfoDelta.mStatus)) {
+              //...
+                if (mInfoDelta.mNumFailed < Constants.MAX_RETRIES) {
+                  //...
+                }
+            }
+          //...
+        }
+        //...
+        } finally {
+          // 失败：删除已删除文件；成功：移动文件到下载目录
+          finalizeDestination();
+
+          // 将任务更新到数据库
+            mInfoDelta.writeToDatabase();
+            //...
+        }
+
+        if (Downloads.Impl.isStatusCompleted(mInfoDelta.mStatus)) {
+            // 扫描相关数据库
+                DownloadScanner.requestScanBlocking(mContext, mInfo.mId, mInfoDelta.mFileName,
+                        mInfoDelta.mMimeType);
+        } else if (mInfoDelta.mStatus == STATUS_WAITING_TO_RETRY
+                || mInfoDelta.mStatus == STATUS_WAITING_FOR_NETWORK
+                || mInfoDelta.mStatus == STATUS_QUEUED_FOR_WIFI) {
+                  // 尝试重新下载
+            Helpers.scheduleJob(mContext, DownloadInfo.queryDownloadInfo(mContext, mId));
+        }
+
+        // 结束 JobScheduler 的任务
+        if (!mShutdownRequested)
+        mJobService.jobFinishedInternal(mParams, false);
+    }
+```
+
+`DownloadThread`的`run()`方法中，核心下载方法为`executeDonwload()`：
 ``` java
     private void executeDownload() throws StopRequestException {
         final boolean resuming = mInfoDelta.mCurrentBytes !=
@@ -120,6 +168,7 @@ public long enqueue(Request request) {
             HttpURLConnection conn = null;
             try {
                 //...
+                checkConnectivity();
                 conn = (HttpURLConnection) mNetwork.openConnection(url);
                 //...
                 addRequestHeaders(conn, resuming);
@@ -161,7 +210,7 @@ public long enqueue(Request request) {
 ```
 
 以上代码分为几部分进行分析。
-`while`循环表示重定向尝试次数，超过限定次数的重定向，下载任务会终止并抛出异常。下面简单介绍一下重定向的概念：
+`while`循环表示重定向尝试次数，超过限定次数的重定向，下载任务会终止并抛出异常。简单介绍一下重定向的概念：
 
 **重定向**：
 
@@ -180,7 +229,9 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 
 首先需要传输用户 `UID`。用户 `UID` 强制使用明码传输，因此不能使用 `HTTPS` 协议传输。因为 `HTTP` 重定向过程中可能会切换到 `HTTPS` 协议。
 
-然后需要将下载任务`DownloadInfoDelta`中相关信息（如请求字节数，压缩算法等）写入到`http`请求头中：
+`checkConnectivity()`中会检查网络相关状况，包括是否有网络连接，是否使用蜂窝数据，以及是否显示使用数据大小。
+
+最后`DownloadInfoDelta`中相关信息（如请求字节数，压缩算法等）需要写入到`http`请求头中：
 **`HTTP` 请求头：**
 
 ``` java
@@ -286,6 +337,17 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
                 } else {
                     out = new ParcelFileDescriptor.AutoCloseOutputStream(outPfd);
                 }
+
+                if (mInfoDelta.mTotalBytes > 0) {
+                  //...
+                    StorageUtils.ensureAvailableSpace(mContext, outFd, newBytes);
+                    try {
+                        // We found enough space, so claim it for ourselves
+                        Os.posix_fallocate(outFd, 0, mInfoDelta.mTotalBytes);
+                    }
+                    //...
+                }
+
                 Os.lseek(outFd, mInfoDelta.mCurrentBytes, OsConstants.SEEK_SET);
             }
             //...
@@ -296,18 +358,25 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
     }
 ```
 
-这里的流对象都通过`DRM`框架进行创建，简单介绍一下：
+流对象通过`DRM`框架进行创建，简单介绍一下：
 >[DRM](https://developer.android.google.cn/reference/android/drm/package-summary.html)，英文全称为`Digital Rights Management`，译为数字版权管理。它是目前业界使用非常广泛的一种数字内容版权保护技术。`DRM`框架提供一套机制对用户使用手机上的媒体内容（如`ringtone`, `mp3`等）进行限制，如限制拷贝给第三方，限制使用次数或时限等，从而保护内容提供商的权利。
 
-- `DrmManagerClient`是`Android`中`DRM`框架的核心接口类。如果下载文件为版权保护文件，则通过文件描述符、`mimeType`等变量创建`DrmOutPutStream`，反之创建`ParcelFileDescriptor`中相应流对象（`ParcelFileDescriptor`是可以用于进程间`Binder`通信的`FileDescriptor`）
-- `Os.sleek(FileDescriptor, long offset, int whence)`通过文件描述符从当前偏移量设置`mInfoDelta.mCurrentBytes`中，即支持从文件中间某个字节开始读写。
-``` java
-`transferData()`中核心方法为`transferData(InputStream, OutputStream, FileDescriptor)`，代码如下:
+`DrmManagerClient`是`Android`中`DRM`框架的核心接口类。如果下载文件为版权保护文件，则通过文件描述符、`mimeType`等变量创建`DrmOutPutStream`，反之创建`ParcelFileDescriptor`中相应流对象（`ParcelFileDescriptor`是可以用于进程间`Binder`通信的`FileDescriptor`）
 
+`StorageUtils.ensureAvailableSpace()`检查存储空间是否满足当前下载。该方法通过`PackageManager`删除一些缓存目录和较早前已下载文件，来释放存储空间。
+
+`Os.sleek(FileDescriptor, long offset, int whence)`通过文件描述符设置当前偏移量`mInfoDelta.mCurrentBytes`，即支持从文件中间某个字节开始读写。可以从底层支持文件断点续传。
+
+`transferData()`中核心方法为`transferData(InputStream, OutputStream, FileDescriptor)`，代码如下:
+``` java
     private void transferData(InputStream in, OutputStream out, FileDescriptor outFd)
             throws StopRequestException {
         while (true) {
             int len = -1;
+            if (mShutdownRequested) {
+                throw new StopRequestException(STATUS_HTTP_DATA_ERROR,
+                        "Local halt requested; job probably timed out");
+            }
             try {
                 len = in.read(buffer);
             }
@@ -321,13 +390,47 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
             }
             //...
         }
-        //...
+        // 检查已下载文件是否完整
+        if (mInfoDelta.mTotalBytes != -1 && mInfoDelta.mCurrentBytes != mInfoDelta.mTotalBytes) {
+            throw new StopRequestException(STATUS_HTTP_DATA_ERROR, "Content length mismatch");
+        }
     }
 ```
+
+`mShutdownRequested`变量周期性检查任务是否被取消，由`DownloadThread.requestShutDown()`进行控制。
 接下来的逻辑就是通过普通`I/O`流进行文件读写了。读写完固定字节数后通过`updateProgress()`更新下载进度。
 
 2. 返回`206`，则请求目标下载文件的部分数据。流程与请求所有数据大致相同，不再进行站看。
-3.  返回`307`等重定向相关状态码：如果 `URL`永久重定向，则将重定向后的`URL`写入到下载数据库当中；如果是临时重定向，则继续执行循环执行请求，直到达到重定向最大限定次数。
+3. 返回`307`等重定向相关状态码：如果 `URL`永久重定向，则将重定向后的`URL`写入到下载数据库当中；如果是临时重定向，则继续执行循环执行请求，直到达到重定向最大限定次数。
+
+以上为`executeDonwload()`的整个流程。下载过程出现以下异常，`DownloadManager`=会尝试重新下载，最多不超过`20`次：
+ - 网络连接错误
+ - 存储空间不足
+ - 所下载文件超过蜂窝数据上限，需要等待`WiFi`连接继续下载
+
+ ``` java
+ if (mInfoDelta.mStatus == STATUS_WAITING_TO_RETRY
+                || mInfoDelta.mStatus == STATUS_WAITING_FOR_NETWORK
+                || mInfoDelta.mStatus == STATUS_QUEUED_FOR_WIFI) {
+                  // 重新进行下载任务
+            Helpers.scheduleJob(mContext, DownloadInfo.queryDownloadInfo(mContext, mId));
+        }
+ ```
+
+下载完毕后需要执行`DownloadThread.run()`中的`finally`的代码块:
+
+``` java
+finally {
+  // 失败：删除已删除文件；成功：移动文件到下载目录
+  finalizeDestination();
+
+  // 将任务更新到数据库
+    mInfoDelta.writeToDatabase();
+    //...
+}
+```
+
+`writeToDatabase()`通过`DownloadProvider`进行`update()`，数据库更新完成后执行`DownloadInfo.sendIntentIfRequested()`。最后`sendIntentIfRequested()`中会发送系统广播，通知文件下载已完成。
 
 ## 取消下载
 
@@ -400,12 +503,19 @@ public int markRowDeleted(long... ids) {
 
 `DownloadProvider`中有一个字段`mediaprovider_uri`，`value`指的是该记录在`MediaProvider`中`uri`所对应的值。因此`DownloadProvider`中记录发生改变时，`MediaProvider`记录要同步改变。
 
-#### 以上就是任务下载的基本流程。简单总结一下：
+#### 简单总结整个任务下载的流程：
+
+1. `checkConnectivity()`检查网络状态；
+2. `HttpURLConnection`建立网络连接，将任务相关数据写入请求，并等待响应；
+3. 解析响应报文，将任务通过`DownloadProvider`写入到数据库，并且更新界面；
+4. 检查磁盘是否有足够存储空间，不够的话尝试释放缓存目录以及已下载文件；
+5. 开始进行文件`I/O`读写，周期性检查当前任务是否被取消。输出流写入文件时再次检查是否有足够空间；
+6. 下载成功后更新响应界面，发送系统广播，更新下载数据库，媒体数据库中条目相关字段；
+7. 若下载过程出现网络、存储空间错误，会尝试进行重新下载。达到一定次数后终止下载任务。其他错误则终止下载任务。
 
 ![Alt text](./img/9b492b3c-72bd-4bdc-b435-7e7d49e04130.png)
 
-整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进
-行隔离。
+整体外源应用层通过`FrameWork`层`DownloadManager API`调用到`DownloadProvider`，通过`DownloadProvider`对下载数据库进行增删查改，最后通过`DownloadService`进行线程调度完成下载流程。整个下载流程由`DownloadProvider`作为中间模块进行过渡调用，数据库与`Service`都通过`DownloadProvider`进行隔离。
 
 **Note**:
 - `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
