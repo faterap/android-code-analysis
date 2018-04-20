@@ -1,9 +1,9 @@
 # Download 模块分析(一)
 
 > `Android`中`Download`由三个部分组成：
-> `DocumentsUI` -----> `/frameworks/base/packages/DocumentsUI/`
-> `DownloadManager` ---->`/frameworks/base/core/java/android/app/`
-> `DownloadProvider` ---->`/packages/providers/DownloadProvider/`
+> - `DocumentsUI` -----> `/frameworks/base/packages/DocumentsUI/`
+> - `DownloadManager` ---->`/frameworks/base/core/java/android/app/`
+> - `DownloadProvider` ---->`/packages/providers/DownloadProvider/`
 >
 > 本文主要研究`DownloadManager.java`中的功能，包括不仅限于「开始下载」和「取消下载」。
 
