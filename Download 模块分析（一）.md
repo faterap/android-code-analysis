@@ -237,6 +237,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 `checkConnectivity()`中会检查网络相关状况，包括是否有网络连接，是否使用蜂窝数据，以及是否显示使用数据大小。
 
 最后`DownloadInfoDelta`中相关信息（如请求字节数，压缩算法等）需要写入到`http`请求头中：
+
 **`HTTP` 请求头：**
 
 ``` java
@@ -264,6 +265,7 @@ if ((!cleartextTrafficPermitted) && ("http".equalsIgnoreCase(url.getProtocol()))
 -  `Range`: 告知服务器请求返回文件的哪一部分。`value`为请求文件比特数的范围。
 
 查看`http`响应报文：
+
 **`HTTP` 响应：**
 
 ``` java
