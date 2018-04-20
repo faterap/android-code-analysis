@@ -9,9 +9,9 @@
 
 首先了解一下`Download`模块相关的类：
 - `DownloadProvider` --  数据库操作的封装，继承自`ContentProvider`
-- `DownloadManager` -- 大部分逻辑是进一步封装数据操作，供外部调用
+- `DownloadManager` -- 作为中间层，管理对数据库层的操作，供外部调用
 - `DownloadJobService` -- 封装文件`download`，`delete`等操作，并且操纵下载的`notification`。继承自`Service`
-- `DownloadNotifier` -- 状态栏`Notification`逻辑
+- `DownloadNotifier` -- 控制状态栏`Notification`
 - `DownloadReceiver` -- 配合`DownloadNotifier`进行文件的操作及其`Notification`。
 
 ### 开始下载
@@ -524,7 +524,7 @@ public int markRowDeleted(long... ids) {
 
 **Note**:
 - `DownloadManager`还提供了删除下载（`DownloadManager.remove(long)`），查询下载信息(`DownloadManager.query(Query)`)等接口，实际上还是对`DownloadProvider`进行操作，此处不再详述。
-- `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关继续下载接口，需要开发者自行实现。
+- `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关暂停/继续下载接口，需要开发者自行实现。如何实现可查看下一篇文章。
 
 ----------
 参考资料：
