@@ -4,5 +4,7 @@
 
 ### Completed:
 - DownloadManager.java
+- DownloadProvider.java
+- DownloadThread.java
 
 ### Upcoming:

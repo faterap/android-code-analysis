@@ -11,7 +11,7 @@
 - `COLUMN_REASON`: 可认为是`COLUMN_STATUS`字段的补充。下载失败时，可取值`ERROR_*`常量；下载暂停时，可取值`PAUSED_*`常量；
 - `COLUMN_CONTROL`: 表示当前任务是否暂停，可取值`0`和`1`，分别代表「正在下载」和「暂停下载」。
 
-对于`DownloadProvider`中`COLUMN_STATUS`字段，`DownloadManager.CursorTranslator`将`DownloadProvider`中若干状态映射为`5`个：
+对于COLUMN_STATUS`字段，`DownloadManager.CursorTranslator`将`DownloadProvider`中若干状态映射为`5`个：
 
 ``` java
 private int translateStatus(int status) {
@@ -38,7 +38,7 @@ private int translateStatus(int status) {
 - `STATUS_RUNNING`：正在下载
 - `STATUS_PAUSED`: 等待重试下载，或处于暂停状态，等待继续下载
 - `STATUS_SUCCESS`: 成功下载
-- `STATUS_FAILED`: 下载失败，失败后不再充实
+- `STATUS_FAILED`: 下载失败，失败后不再重试
 
 对于`COLUMN_REASON`字段：
 
@@ -163,3 +163,6 @@ public boolean isReadyToSchedule() {
 总结一下，要想对原生`DownloadManager`进行功能扩展，大致思路如下：
 1. `DownloadManager`增加暂停下载、继续下载的接口；
 2. 暂停下载时候需要将`COLUMN_CONTROL`值置为`CONTROL_PAUSED`，`COLUMN_STATUS`值置为`STATUS_PAUSED_BY_APP`；继续下载将`COLUMN_CONTROL`将`CONTROL_RUN`，`COLUMN_STATUS`字段置为`STATUS_RUNNING`。
+
+参考资料：
+> www.trinea.cn/android/android-downloadmanager/
