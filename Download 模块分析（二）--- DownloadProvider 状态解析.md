@@ -164,5 +164,7 @@ public boolean isReadyToSchedule() {
 1. `DownloadManager`增加暂停下载、继续下载的接口；
 2. 暂停下载时候需要将`COLUMN_CONTROL`值置为`CONTROL_PAUSED`，`COLUMN_STATUS`值置为`STATUS_PAUSED_BY_APP`；继续下载将`COLUMN_CONTROL`将`CONTROL_RUN`，`COLUMN_STATUS`字段置为`STATUS_RUNNING`。
 
+----------
+
 参考资料：
 > www.trinea.cn/android/android-downloadmanager/

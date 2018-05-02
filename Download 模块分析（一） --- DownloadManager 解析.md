@@ -529,6 +529,7 @@ public int markRowDeleted(long... ids) {
 - `DownloadProvider`以及数据库中均提供断点续传相关实现，但是`DownloadManager`没有相关暂停/继续下载接口，需要开发者自行实现。如何实现可查看下一篇文章。
 
 ----------
+
 参考资料：
 
 > https://www.jianshu.com/p/c9dc04af2f54
