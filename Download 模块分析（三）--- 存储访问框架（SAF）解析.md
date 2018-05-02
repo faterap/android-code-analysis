@@ -1,6 +1,6 @@
 # Download 模块分析（三）--- 存储访问框架（SAF）
 
-> 前两篇介绍了`DownloadManager`和`DownloadProvider`中的状态，在介绍`DocumentsUI`之前，需要先了解一下`SAF`框架背景和内容。
+> 前两篇介绍了`DownloadManager`和`DownloadProvider`中的状态，在介绍`DocumentsUI`之前，需要先了解一下`SAF`框架。因为`SAF`框架是整个`DocuemntsUI`的实现基础。
 
 ### 背景
 `Android`在`Kitkat`上剥夺了第三方应用程序对`SD Card`的写权限，使得一大批的应用程序不能够再使用外置的`SD Card`，此举招来了骂声一片，很多开发者都要求重新允许第三方应用获得`SD Card`的写权限。迫于压力，`Google`终于在`Lollipop`上`Android`又打开了一扇通往`SD Card`的大门: `Storage Access FrameWork`（`SAF`）—— 存储访问框架。
