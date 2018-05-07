@@ -39,6 +39,7 @@
 **DocumentsProvider.java**
 
 `DocumentsProvider`中采用传统的文件层次结构：
+
 ![Alt text](./img/root_document.png)
 
 `DocumentsProvider`有以下特点：
